@@ -1,0 +1,169 @@
+#!/bin/bash
+help () {
+echo "
+iso-tree-diff -version 1.0 (2022 Oct 13, compiled Unkonwn)
+
+用法: iso-tree-diff [iso文件] [iso文件] [参数] 
+
+参数:
+     -h --help    Print usage and this help message and exit.
+     -w [文件] --print [文件]   Usage: iso-tree-diff [iso文件] [iso文件] [参数] [输出的文件] Print different files,without filename will print on screen.
+"
+}
+
+if [[ $1 =~ ^[-a-z]+ ]]
+then 
+	case $1 in
+	-h|--help)
+        	help
+        	;;
+	esac
+
+else
+
+Rand=`cat /proc/sys/kernel/random/uuid| cksum |cut -f1 -d" "`
+ls $1
+if [ $? -ne 0 ]
+then
+	echo -e "\e[31m输入的iso文件的路径有误！\e[0m"
+fi
+file $1 | egrep -w "ISO 9660"
+if [ $? -ne 0 ]
+then
+        echo -e "\e[31m输入的文件不为ISO文件！\e[0m"
+        exit
+fi
+
+ls $2
+if [ $? -ne 0 ]
+then
+        echo -e "\e[31m输入的iso文件的路径有误！\e[0m"
+fi
+file $2 | egrep -w "ISO 9660"
+if [ $? -ne 0 ]
+then
+        echo -e "\e[31m输入的文件不为ISO文件！\e[0m"
+        exit
+fi
+isomd1=`md5sum $1 | awk -F "[ ]+" '{print $1}'`
+isomd2=`md5sum $2 | awk -F "[ ]+" '{print $1}'`
+iso1=`echo $1 | awk -F "[/ ]+" '{print $NF}'`
+iso2=`echo $2 | awk -F "[/ ]+" '{print $NF}'`
+if [[ $isomd1 == $isomd2 ]]
+then
+	echo -e "\e[36m两个ISO文件内容相同，无文件差异\e[0m"
+else
+UUID1=`cat /proc/sys/kernel/random/uuid | cksum | cut -f1 -d" "`
+UUID2=`cat /proc/sys/kernel/random/uuid | cksum | cut -f1 -d" "`
+index1=`cat /proc/sys/kernel/random/uuid | cksum | cut -f1 -d" "`
+index2=`cat /proc/sys/kernel/random/uuid | cksum | cut -f1 -d" "`
+index3=`cat /proc/sys/kernel/random/uuid | cksum | cut -f1 -d" "`
+index4=`cat /proc/sys/kernel/random/uuid | cksum | cut -f1 -d" "`
+mdir1=/tmp/iso-tree-diff/$UUID1/$iso1
+mdir2=/tmp/iso-tree-diff/$UUID2/$iso2
+echo -e "\e[36m正在释放 $1 到 $mdir1\e[0m"
+echo -e "\e[36m正在释放 $2 到 $mdir2\e[0m"
+mkdir -p $mdir1
+mkdir -p $mdir2
+mount $1 $mdir1
+mount $2 $mdir2
+echo -e "\e[36m正在生成$iso1的文件信息\e[0m"
+find $mdir1 > /tmp/$index1.index
+echo -e "\e[36m正在生成$iso2的文件信息\e[0m"
+find $mdir2 > /tmp/$index2.index
+loop1=`cat /tmp/$index1.index | wc -l`
+loop2=`cat /tmp/$index2.index | wc -l`
+for (( i=1;i<=$loop1;i++ ))
+do
+        md5sum `sed -n ""$i"p" /tmp/$index1.index`
+        if [ $? -eq 0 ]
+        then
+        md5sum `sed -n ""$i"p" /tmp/$index1.index` >> /tmp/$index3.index
+        fi
+done
+for (( j=1;j<=$loop2;j++ ))
+do
+        md5sum `sed -n ""$j"p" /tmp/$index2.index`
+        if [ $? -eq 0 ]
+        then
+        md5sum `sed -n ""$j"p" /tmp/$index2.index` >> /tmp/$index4.index
+        fi
+done
+sed -i "s@$mdir1@@g" /tmp/$index1.index
+sed -i "s@$mdir2@@g" /tmp/$index2.index
+sed -i "s@$mdir1@@g" /tmp/$index3.index
+sed -i "s@$mdir2@@g" /tmp/$index4.index
+loop1=`cat /tmp/$index3.index | wc -l`
+loop2=`cat /tmp/$index4.index | wc -l`
+echo -e "\e[36m正在计算文件差异...\e[0m"
+cat > /tmp/iso-tree-diff/safiledifmd.txt << EOF
+                                                                       差异的文件
+$iso1                             $iso2                                文件名称
+EOF
+for (( i=1;i<=$loop1;i++ ))
+do
+        samefile1=`awk '{print $2}' /tmp/$index3.index | sed -n ""$i"p"`
+        md1=`awk '{print $1}' /tmp/$index3.index | sed -n ""$i"p"`
+        for (( j=1;j<=$loop2;j++ ))
+        do
+                samefile2=`awk '{print $2}' /tmp/$index4.index | sed -n ""$j"p"`
+                md2=`awk '{print $1}' /tmp/$index4.index | sed -n ""$j"p"`
+                if [ $samefile1 == $samefile2 ] && [ $md1 != $md2 ]
+                then
+                        echo ""$md1"  "$md2"     "$samefile1"" >> /tmp/iso-tree-diff/safiledifmd.txt
+                fi
+        done
+done
+echo -e "\e[36m正在计算文件与目录匹配差异...\e[0m"
+cat > /tmp/iso-tree-diff/whohas.txt << EOF
+                    不匹配的文件于目录 
+$iso1    $iso2      文件与目录
+EOF
+cat /tmp/$index1.index /tmp/$index2.index | awk '!x[$0]++' > /tmp/iso-tree-diff/total.txt
+loop=`cat /tmp/iso-tree-diff/total.txt | wc -l`
+for (( i=1;i<=$loop;i++ ))
+do
+        file=`awk '{print $1}' /tmp/iso-tree-diff/total.txt | sed -n ""$i"p"`
+        value1=`echo "$file" | xargs -i egrep "{}" /tmp/$index1.index /tmp/$index2.index | grep $index1.index | awk -F "[:]" '{print $1}' | uniq`
+        value2=`echo "$file" | xargs -i egrep "{}" /tmp/$index1.index /tmp/$index2.index | grep $index2.index | awk -F "[:]" '{print $1}' | uniq`
+        if [ "$value1" != "" ] || [ "$value2" != "" ]
+        then
+                if [ "$value1" != "" ]
+                then
+                        if [ "$value2" != "" ]
+                        then
+                                echo "   [OK]            [OK]           $file" >> /tmp/iso-tree-diff/whohas.txt
+                        else
+                                echo "   [OK]                           $file" >> /tmp/iso-tree-diff/whohas.txt
+                        fi
+                else
+                        echo "                   [OK]           $file" >> /tmp/iso-tree-diff/whohas.txt
+                fi
+        fi
+done
+echo -e "\e[36m正在将结果输出到$4\e[0m"
+echo "-----------------------------------------" > /tmp/iso-tree-diff/outcome.txt
+cat /tmp/iso-tree-diff/safiledifmd.txt >> /tmp/iso-tree-diff/outcome.txt
+echo "-----------------------------------------" >> /tmp/iso-tree-diff/outcome.txt
+cat /tmp/iso-tree-diff/whohas.txt >> /tmp/iso-tree-diff/outcome.txt
+cat /tmp/iso-tree-diff/outcome.txt
+rm -rf /tmp/$index1.index
+rm -rf /tmp/$index2.index
+rm -rf /tmp/$index3.index
+rm -rf /tmp/$index4.index
+rm -rf /tmp/iso-tree-diff/total.txt
+rm -rf /tmp/iso-tree-diff/whohas.txt
+rm -rf /tmp/iso-tree-diff/safiledifmd.txt
+umount $1
+umount $2
+rm -rf /tmp/iso-tree-diff/$UUID1
+rm -rf /tmp/iso-tree-diff/$UUID2
+echo -e "\e[32m执行完成\e[0m"
+case $3 in
+-w|--print)
+	echo -e "\e[36m正在将结果输出到$4\e[0m"
+	cp -a /tmp/iso-tree-diff/outcome.txt $4
+        ;;
+esac
+fi
+fi
