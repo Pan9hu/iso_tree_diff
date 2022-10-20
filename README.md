@@ -12,7 +12,7 @@ git clone https://github.com/Pan9hu/iso_tree_diff.git
 
 chmod a+x iso-tree-diff 
 
-可以将此文件移动到bin目录下，或将项目加目录添家到环境变量中。
+可以将此文件移动到bin目录下，或将项目家目录添加到环境变量中。
 
 
 
