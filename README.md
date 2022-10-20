@@ -31,3 +31,7 @@ chmod a+x iso-tree-diff
 ### 贡献：
 
 bluemiaomiao、Septemberrr99、XiaoYuQun
+
+### 协议：
+
+MIT license
