@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 help () {
 echo "
 iso-tree-diff -version 1.0 (2022 Oct 13, compiled Unkonwn)
