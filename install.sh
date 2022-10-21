@@ -10,5 +10,4 @@ then
 ITD_HOME=/opt/iso_tree_diff
 PATH=$ITD_HOME/bin:$PATH
         EOF
-fi    
-
+fi
