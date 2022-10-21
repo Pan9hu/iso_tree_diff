@@ -5,30 +5,39 @@
 
 
 ### 安装：
+一、
+
+**curl：**
 
 ```
-git clone https://github.com/Pan9hu/iso_tree_diff.git
+curl https://raw.iqiq.io/Pan9hu/iso_tree_diff/main/install.sh | bash
+```
+**wget：**
+
+```
+wget -qO- https://raw.iqiq.io/Pan9hu/iso_tree_diff/main/install.sh | bash
 ```
 
-进入iso_tree_diff项目目录中
+会自动安装到/opt目录下，并配置好环境变量。
 
+二、
+更新当前shell中的环境变量
 ```
-chmod a+x iso-tree-diff 
+source /etc/profile 
 ```
 
-可以将此文件移动到bin目录下，或将项目家目录添加到环境变量中。
 
 
 
 ### 使用：
 
-用法: iso-tree-diff [iso文件] [iso文件] [参数] 
+用法: `iso-tree-diff [iso文件] [iso文件] [参数] `
 
 参数: 
 
-​		 -h --help    Print usage and this help message and exit.
+​		 `-h --help    Print usage and this help message and exit.`
 
-​		-w [文件] --print [文件]   Usage: iso-tree-diff [iso文件] [iso文件] [参数] [输出的文件] Print different files,without filename will print on screen.
+​		`-w [文件] --print [文件]   Usage: iso-tree-diff [iso文件] [iso文件] [参数] [输出的文件] Print different files,without filename will print on screen.`
 
 
 
