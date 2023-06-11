@@ -43,7 +43,7 @@ source /etc/profile
 
 ### 贡献：
 
-bluemiaomiao、Septemberrr99、XiaoYuQun
+bluemiaomiao、XiaoYuQun
 
 ### 协议：
 
